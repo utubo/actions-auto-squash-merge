@@ -58,7 +58,7 @@ runs:
               duplicate=true
               break
             fi
-          done << (echo "$commits")
+          done <<< (echo "$commits")
 
           if [[ "$duplicate" == false ]]; then
             seen+=("$msg")
