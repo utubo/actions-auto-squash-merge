@@ -36,33 +36,44 @@ runs:
         exit 0
 
     - name: Generate smart commit message
-      if: steps.check.outputs.merge_needed == 'true'
       id: message
       shell: bash
       run: |
         commits=$(git log origin/${{ inputs.target-branch }}..origin/${{ inputs.source-branch }} --oneline --pretty=format:"%s")
+
         filtered=""
-        seen_messages=()
-        while IFS= read -r line; do
-          msg=$(echo "$line" | cut -d' ' -f2-)
+        seen=()
+
+        for commit in $commits; do
+          msg="${commit#* }"
+          # skip too little commit messages
           if [[ "$msg" =~ ^typo$|^.?[Ff]ix:?\ +[Tt]ypo$ ]]; then
             continue
-          endif
-          if [[ " ${seen_messages[*]} " =~ " $msg " ]]; then
-            count=$(grep -c "^$msg" <<< "$filtered" || echo "0")
-            filtered=$(sed "s/^$msg (x$count)$/$msg (x$((count+1)))/" <<< "$filtered")
-          else
-            seen_messages+=("$msg")
+          fi
+
+          # uniq
+          duplicate=false
+          for prev in "${seen[@]}"; do
+            if [[ "$prev" == "$msg" ]]; then
+              duplicate=true
+              break
+            fi
+          done
+
+          if [[ "$duplicate" == false ]]; then
+            seen+=("$msg")
             filtered+="$msg"$'\n'
           fi
-        done <<< "$commits"
-        if [ -z "$filtered" ]; then
+        done
+
+        # create the message
+        if [[ -z "$filtered" ]]; then
           echo "msg=Auto squash merge (no significant changes)" >> $GITHUB_OUTPUT
-        elif [ $(echo "$filtered" | wc -l) -eq 1 ]; then
+        elif [[ $(echo "$filtered" | wc -l) -eq 1 ]]; then
           echo "msg=$(echo "$filtered" | head -1)" >> $GITHUB_OUTPUT
         else
-          summary=$(echo "$filtered" | head -3 | paste -sd '\n' -)
-          echo "msg=$summary" >> $GITHUB_OUTPUT
+          summary=$(echo "$filtered" | head -3 | tr '\n' '\n')
+          echo "msg=Squash merge:\n$summary" >> $GITHUB_OUTPUT
         fi
 
     - name: Squash merge
