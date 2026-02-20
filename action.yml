@@ -83,7 +83,17 @@ runs:
       shell: bash
       run: |
         git checkout ${{ inputs.target-branch }}
-        git merge origin/${{ inputs.source-branch }} --squash || exit 1
-        git commit -m "${{ steps.message.outputs.msg }}"
-        git push origin ${{ inputs.target-branch }}
+        COMMIT_COUNT=$(echo "${{ steps.message.outputs.filtered_commits }}" | wc -l)
+        if [ "$COMMIT_COUNT" -eq 1 ]; then
+          git merge origin/${{ inputs.source-branch }} --merge || exit 1
+          git push origin ${{ inputs.target-branch }}
+        else
+          git merge origin/${{ inputs.source-branch }} --squash || exit 1
+          git commit -m "${{ steps.message.outputs.msg }}"
+          git push origin ${{ inputs.target-branch }}
+          git branch -d ${{ inputs.source-branch }}
+          git push origin --delete ${{ inputs.source-branch }} || true
+          git checkout -b ${{ inputs.source-branch }}
+          git push -u origin ${{ inputs.source-branch }}
+        fi
 
