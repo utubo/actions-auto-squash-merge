@@ -45,8 +45,7 @@ runs:
         seen=()
 
         mapfile -t commits_array <<< "$commits"
-        for commit in "${commits_array[@]}"; do
-          msg=$(echo "$commit" | cut -d' ' -f2-)
+        for msg in "${commits_array[@]}"; do
           # skip too little commit messages
           if [[ "$msg" =~ ^typo$|^.?[Ff]ix:?\ +[Tt]ypo$ ]]; then
             continue
