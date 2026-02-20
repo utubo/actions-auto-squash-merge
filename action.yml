@@ -43,25 +43,25 @@ runs:
         commits=$(git log origin/${{ inputs.target-branch }}..origin/${{ inputs.source-branch }} --oneline --pretty=format:"%s")
         filtered=""
         seen_messages=()
-        echo "$commits" | while IFS= read -r line; do
+        while IFS= read -r line; do
           msg=$(echo "$line" | cut -d' ' -f2-)
           if [[ "$msg" =~ ^typo$|^.?[Ff]ix:?\ +[Tt]ypo$ ]]; then
+            continue
+          endif
           if [[ " ${seen_messages[*]} " =~ " $msg " ]]; then
-            count=$(echo "$filtered" | grep -c "^$msg" || echo "0")
-            filtered=$(echo "$filtered" | sed "s/^$msg (x$count)$/$msg (x$((count+1)))/")
+            count=$(grep -c "^$msg" <<< "$filtered" || echo "0")
+            filtered=$(sed "s/^$msg (x$count)$/$msg (x$((count+1)))/" <<< "$filtered")
           else
             seen_messages+=("$msg")
             filtered+="$msg"$'\n'
           fi
-        done
-
-        echo "$filtered" > /tmp/filtered_commits.txt
-        if [ ! -s /tmp/filtered_commits.txt ]; then
+        done <<< "$commits"
+        if [ -z "$filtered" ]; then
           echo "msg=Auto squash merge (no significant changes)" >> $GITHUB_OUTPUT
-        elif [ $(wc -l < /tmp/filtered_commits.txt) -eq 1 ]; then
-          echo "msg=$(head -1 /tmp/filtered_commits.txt)" >> $GITHUB_OUTPUT
+        elif [ $(echo "$filtered" | wc -l) -eq 1 ]; then
+          echo "msg=$(echo "$filtered" | head -1)" >> $GITHUB_OUTPUT
         else
-          summary=$(head -3 /tmp/filtered_commits.txt | paste -sd '\n' -)
+          summary=$(echo "$filtered" | head -3 | paste -sd '\n' -)
           echo "msg=$summary" >> $GITHUB_OUTPUT
         fi
 
