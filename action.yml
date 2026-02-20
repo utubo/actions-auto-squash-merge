@@ -64,7 +64,7 @@ runs:
             seen+=("$msg")
             filtered+="$msg"$'\n'
           fi
-        done << (echo "$commits")
+        done <<< "$commits"
 
         # create the message
         if [ -z "$filtered" ]; then
