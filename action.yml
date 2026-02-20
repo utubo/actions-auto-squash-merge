@@ -47,8 +47,8 @@ runs:
           msg=$(echo "$line" | cut -d' ' -f2-)
           if [[ "$msg" =~ ^typo$|^.?[Ff]ix:?\ +[Tt]ypo$ ]]; then
           if [[ " ${seen_messages[*]} " =~ " $msg " ]]; then
-            count=$(grep -c "^$msg" <<< "$filtered" || echo "0")
-            filtered=$(sed "s/^$msg (x$count)$/$msg (x$((count+1)))/" <<< "$filtered")
+            count=$(echo "$filtered" | grep -c "^$msg" || echo "0")
+            filtered=$(echo "$filtered" | sed "s/^$msg (x$count)$/$msg (x$((count+1)))/")
           else
             seen_messages+=("$msg")
             filtered+="$msg"$'\n'
