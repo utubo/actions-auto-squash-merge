@@ -54,12 +54,14 @@ runs:
             filtered+="$msg"$'\n'
           fi
         done
-        if [ -z "$filtered" ]; then
+
+        echo "$filtered" > /tmp/filtered_commits.txt
+        if [ ! -s /tmp/filtered_commits.txt ]; then
           echo "msg=Auto squash merge (no significant changes)" >> $GITHUB_OUTPUT
-        elif [ $(echo "$filtered" | wc -l) -eq 1 ]; then
-          echo "msg=$(echo "$filtered" | head -1)" >> $GITHUB_OUTPUT
+        elif [ $(wc -l < /tmp/filtered_commits.txt) -eq 1 ]; then
+          echo "msg=$(head -1 /tmp/filtered_commits.txt)" >> $GITHUB_OUTPUT
         else
-          summary=$(echo "$filtered" | head -3 | paste -sd '\n' -)
+          summary=$(head -3 /tmp/filtered_commits.txt | paste -sd '\n' -)
           echo "msg=$summary" >> $GITHUB_OUTPUT
         fi
 
