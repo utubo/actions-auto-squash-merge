@@ -46,7 +46,7 @@ runs:
 
         mapfile -t commits_array <<< "$commits"
         for commit in "${commits_array[@]}"; do
-          msg="${commit#* }"
+          msg=$(echo "$commit" | cut -d' ' -f2-)
           # skip too little commit messages
           if [[ "$msg" =~ ^typo$|^.?[Ff]ix:?\ +[Tt]ypo$ ]]; then
             continue
