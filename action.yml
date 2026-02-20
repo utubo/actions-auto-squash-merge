@@ -44,7 +44,8 @@ runs:
         filtered=""
         seen=()
 
-        while IFS= read -r commit; do
+        mapfile -t commits_array <<< "$commits"
+        for commit in "${commits_array[@]}"; do
           msg="${commit#* }"
           # skip too little commit messages
           if [[ "$msg" =~ ^typo$|^.?[Ff]ix:?\ +[Tt]ypo$ ]]; then
@@ -64,7 +65,7 @@ runs:
             seen+=("$msg")
             filtered+="$msg"$'\n'
           fi
-        done <<< "$commits"
+        done
 
         # create the message
         if [ -z "$filtered" ]; then
