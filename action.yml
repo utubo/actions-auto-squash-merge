@@ -58,13 +58,13 @@ runs:
               duplicate=true
               break
             fi
-          done <<< (echo "$commits")
+          done
 
           if [[ "$duplicate" == false ]]; then
             seen+=("$msg")
             filtered+="$msg"$'\n'
           fi
-        done
+        done << (echo "$commits")
 
         # create the message
         if [ -z "$filtered" ]; then
