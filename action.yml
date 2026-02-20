@@ -1,0 +1,69 @@
+name: 'Auto Squash Merge'
+description: 'develop -> main auto squash and merge'
+inputs:
+  source-branch:
+    description: 'Source branch'
+    default: 'develop'
+  target-branch:
+    description: 'Target branch'
+    default: 'main'
+runs:
+  using: 'composite'
+  steps:
+    - name: Check source branch exists
+      id: branch-check
+      shell: bash
+      run: |
+        if ! git ls-remote --exit-code --heads origin ${{ inputs.source-branch }} > /dev/null 2>&1; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+        fi
+        exit 0
+
+    - name: Check if merge needed
+      if: steps.branch-check.outputs.skip != 'true'
+      id: check
+      shell: bash
+      run: |
+        git fetch origin
+        if ! git merge-base --is-ancestor origin/${{ inputs.target-branch }} origin/${{ inputs.source-branch }}; then
+          echo "merge_needed=true" >> $GITHUB_OUTPUT
+        fi
+        exit 0
+
+    - name: Generate smart commit message
+      if: steps.check.outputs.merge_needed == 'true'
+      id: message
+      shell: bash
+      run: |
+        commits=$(git log origin/${{ inputs.target-branch }}..origin/${{ inputs.source-branch }} --oneline --pretty=format:"%s")
+        filtered=""
+        seen_messages=()
+        while IFS= read -r line; do
+          msg=$(echo "$line" | cut -d' ' -f2-)
+          if [[ "$msg" =~ ^typo$|^.?[Ff]ix:?\ +[Tt]ypo$ ]]; then
+          if [[ " ${seen_messages[*]} " =~ " $msg " ]]; then
+            count=$(grep -c "^$msg" <<< "$filtered" || echo "0")
+            filtered=$(sed "s/^$msg (x$count)$/$msg (x$((count+1)))/" <<< "$filtered")
+          else
+            seen_messages+=("$msg")
+            filtered+="$msg"$'\n'
+          fi
+        done <<< "$commits"
+        if [ -z "$filtered" ]; then
+          echo "msg=Auto squash merge (no significant changes)" >> $GITHUB_OUTPUT
+        elif [ $(echo "$filtered" | wc -l) -eq 1 ]; then
+          echo "msg=$(echo "$filtered" | head -1)" >> $GITHUB_OUTPUT
+        else
+          summary=$(echo "$filtered" | head -3 | paste -sd '\n' -)
+          echo "msg=$summary" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Squash merge
+      if: steps.check.outputs.merge_needed == 'true'
+      shell: bash
+      run: |
+        git checkout ${{ inputs.target-branch }}
+        git merge origin/${{ inputs.source-branch }} --squash || exit 1
+        git commit -m "${{ steps.message.outputs.msg }}"
+        git push origin ${{ inputs.target-branch }}
+
