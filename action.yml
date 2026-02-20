@@ -67,13 +67,15 @@ runs:
         done
 
         # create the message
-        if [[ -z "$filtered" ]]; then
-          echo "msg=Auto squash merge (no significant changes)" >> $GITHUB_OUTPUT
-        elif [[ $(echo "$filtered" | wc -l) -eq 1 ]]; then
-          echo "msg=$(echo "$filtered" | head -1)" >> $GITHUB_OUTPUT
+        if [ -z "$filtered" ]; then
+          latest_commit=$(git log -1 origin/${{ inputs.source-branch }} --pretty=format:"%s")
+          echo "msg<<COMMIT" >> $GITHUB_OUTPUT
+          echo "$latest_commit" >> $GITHUB_OUTPUT
+          echo "COMMIT" >> $GITHUB_OUTPUT
         else
-          summary=$(echo "$filtered" | head -3 | tr '\n' '\n')
-          echo "msg=Squash merge:\n$summary" >> $GITHUB_OUTPUT
+          echo "msg<<COMMITS" >> $GITHUB_OUTPUT
+          echo "$filtered" >> $GITHUB_OUTPUT
+          echo "COMMITS" >> $GITHUB_OUTPUT
         fi
 
     - name: Squash merge
