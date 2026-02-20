@@ -43,7 +43,7 @@ runs:
         commits=$(git log origin/${{ inputs.target-branch }}..origin/${{ inputs.source-branch }} --oneline --pretty=format:"%s")
         filtered=""
         seen_messages=()
-        while IFS= read -r line; do
+        echo "$commits" | while IFS= read -r line; do
           msg=$(echo "$line" | cut -d' ' -f2-)
           if [[ "$msg" =~ ^typo$|^.?[Ff]ix:?\ +[Tt]ypo$ ]]; then
           if [[ " ${seen_messages[*]} " =~ " $msg " ]]; then
@@ -53,7 +53,7 @@ runs:
             seen_messages+=("$msg")
             filtered+="$msg"$'\n'
           fi
-        done <<< "$commits"
+        done
         if [ -z "$filtered" ]; then
           echo "msg=Auto squash merge (no significant changes)" >> $GITHUB_OUTPUT
         elif [ $(echo "$filtered" | wc -l) -eq 1 ]; then
