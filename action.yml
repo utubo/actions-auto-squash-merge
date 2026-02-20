@@ -44,7 +44,7 @@ runs:
         filtered=""
         seen=()
 
-        for commit in $commits; do
+        echo "$commits" | while IFS= read -r commit; do
           msg="${commit#* }"
           # skip too little commit messages
           if [[ "$msg" =~ ^typo$|^.?[Ff]ix:?\ +[Tt]ypo$ ]]; then
