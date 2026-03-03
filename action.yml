@@ -91,7 +91,7 @@ runs:
           git merge origin/${{ inputs.source-branch }} --squash || exit 1
           git commit -m "${{ steps.message.outputs.msg }}"
           git push origin ${{ inputs.target-branch }}
-          git branch -d ${{ inputs.source-branch }}
+          git branch -D ${{ inputs.source-branch }}
           git push origin --delete ${{ inputs.source-branch }} || true
           git checkout -b ${{ inputs.source-branch }}
           git push -u origin ${{ inputs.source-branch }}
